@@ -1,11 +1,13 @@
 import { Router } from "express";
 import {
   loginUserController,
+  logoutUserController,
+  refreshUserSessionController,
   registerUserController,
-} from "../controllers/auth";
-import { loginUserSchema, registerUserSchema } from "../validation/auth";
-import { ctrlWrapper } from "../utils/ctrlWrapper";
-import { validateBody } from "../middlewares/validateBody";
+} from "../controllers/auth.js";
+import { loginUserSchema, registerUserSchema } from "../validation/auth.js";
+import { ctrlWrapper } from "../utils/ctrlWrapper.js";
+import { validateBody } from "../middlewares/validateBody.js";
 
 const router = Router();
 
@@ -19,5 +21,9 @@ router.post(
   validateBody(loginUserSchema),
   ctrlWrapper(loginUserController)
 );
+
+router.post("/refresh", ctrlWrapper(refreshUserSessionController));
+
+router.post("/logout",ctrlWrapper(logoutUserController));
 
 export default router;
