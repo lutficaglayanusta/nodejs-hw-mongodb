@@ -7,7 +7,10 @@ import {
 } from "../services/contacts.js";
 import { parsePaginationParams } from "../utils/parsePaginationParams.js";
 import createHttpError from "http-errors";
+import { saveFileToUploadDir } from "../utils/saveFileToUploadDir.js";
+import { saveFileToCloudinary } from "../utils/saveFileToCloudinary.js";
 import { parseSortParams } from "../utils/parseSortParams.js";
+import { env } from "../utils/env.js";
 
 export const getContactsController = async (req, res) => {
   const { page, perPage } = parsePaginationParams(req.query);
@@ -44,7 +47,19 @@ export const getContactController = async (req, res) => {
 };
 export const createContactController = async (req, res) => {
   const id = req.user._id;
-  const contact = await createContact(req.body, id);
+  const photo = req.file;
+
+  let photoUrl;
+
+  if (photo) {
+    if (env("ENABLE_CLOUDINARY") === true) {
+      photoUrl = await saveFileToCloudinary(photo);
+    } else {
+      photoUrl = await saveFileToUploadDir(photo);
+    }
+  }
+
+  const contact = await createContact({ ...req.body, photo: photoUrl }, id);
 
   res.status(201).json({
     status: 201,
@@ -54,10 +69,25 @@ export const createContactController = async (req, res) => {
 };
 export const patchContactController = async (req, res) => {
   const { contactId } = req.params;
+  const photo = req.file;
+
+  let photoUrl;
+
+  if (photo) {
+    if (env("ENABLE_CLOUDINARY") === "true") {
+      photoUrl = await saveFileToCloudinary(photo);
+    } else {
+      photoUrl = await saveFileToUploadDir(photo);
+    }
+  }
 
   const id = req.user._id;
 
-  const contact = await updateContact(contactId, req.body, id);
+  const contact = await updateContact(
+    contactId,
+    { ...req.body, photo: photoUrl },
+    id
+  );
 
   if (!contact) {
     throw createHttpError(404, "Contact not found");
@@ -74,7 +104,7 @@ export const deleteContactController = async (req, res) => {
 
   const id = req.user._id;
 
-  const contact = await deleteContact(contactId,id);
+  const contact = await deleteContact(contactId, id);
   if (!contact) {
     throw createHttpError(404, "Contact not found");
   }
